@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::BufReader;
 use std::ops::Add;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -14,6 +16,7 @@ use ethers::providers::Middleware;
 use ethers::types::{Address, H256};
 use ethers::types::{H160, U256};
 use mev_share::rpc::{BundleItem, Inclusion, SendBundleRequest};
+use serde::Deserialize;
 use tracing::info;
 
 use crate::types::V2V3PoolRecord;
@@ -23,7 +26,7 @@ use super::types::{Action, Event};
 use mev_share_bindings::blind_arb::BlindArb;
 
 /// Information about a uniswap v2 pool.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct V2PoolInfo {
     /// Address of the v2 pool.
     pub v2_pool: H160,
@@ -45,14 +48,31 @@ pub struct MevShareUniArb<M, S> {
 
 impl<M: Middleware + 'static, S: Signer> MevShareUniArb<M, S> {
     /// Create a new instance of the strategy.
-    pub fn new(client: Arc<M>, signer: S, arb_contract_address: Address) -> Self {
+    pub fn new(
+        client: Arc<M>,
+        signer: S,
+        arb_contract_address: Address,
+        pools_path: String,
+    ) -> Self {
         Self {
             client: client.clone(),
-            pool_map: HashMap::new(),
+            pool_map: retrieve_pools(pools_path).expect("Pool file error"),
             tx_signer: signer,
             arb_contract: BlindArb::new(arb_contract_address, client),
         }
     }
+}
+
+#[derive(Debug)]
+enum RetrievePoolError {
+    FileError(std::io::Error),
+    JsonError(serde_json::Error),
+}
+
+fn retrieve_pools(path: String) -> Result<HashMap<H160, V2PoolInfo>, RetrievePoolError> {
+    let file = File::open(path).map_err(RetrievePoolError::FileError)?;
+    let reader = BufReader::new(file);
+    serde_json::from_reader(reader).map_err(RetrievePoolError::JsonError)
 }
 
 #[async_trait]

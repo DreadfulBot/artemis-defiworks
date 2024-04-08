@@ -1,0 +1,26 @@
+{
+    "0x5ab53ee1d50eef2c1dd3d5402789cd27bb52c1bb": {
+        "v2_pool": "0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f",
+        "is_weth_token0": false
+    },
+    "0xae614a7a56cb79c04df2aeba6f5dab80a39ca78e": {
+        "v2_pool": "0xb6909b960dbbe7392d405429eb2b3649752b4838",
+        "is_weth_token0": false
+    },
+    "0xea4ba4ce14fdd287f380b55419b1c5b6c3f22ab6": {
+        "v2_pool": "0xcffdded873554f362ac02f8fb1f02e5ada10516f",
+        "is_weth_token0": false
+    },
+    "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8": {
+        "v2_pool": "0xa478c2975ab1ea89e8196811f51a7b7ade33eb11",
+        "is_weth_token0": false
+    },
+    "0xa6cc3c2531fdaa6ae1a3ca84c2855806728693e8": {
+        "v2_pool": "0xa2107fa5b38d9bbd2c461d6edf11b11a50f6b974",
+        "is_weth_token0": false
+    },
+    "0xe8c6c9227491c0a8156a0106a0204d881bb7e531": {
+        "v2_pool": "0xc2adda861f89bbb333c90c492cb837741916a225",
+        "is_weth_token0": false
+    }
+}

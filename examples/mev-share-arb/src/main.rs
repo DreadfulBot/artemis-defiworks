@@ -33,6 +33,9 @@ pub struct Args {
     /// MEV share signer
     #[arg(long)]
     pub flashbots_signer: String,
+    /// Path to file with pools
+    #[arg(long)]
+    pub pool_json_path: String,
     /// Address of the arb contract.
     #[arg(long)]
     pub arb_contract_address: Address,
@@ -76,6 +79,7 @@ async fn main() -> Result<()> {
         Arc::new(provider.clone()),
         wallet,
         args.arb_contract_address,
+        args.pool_json_path,
     );
     engine.add_strategy(Box::new(strategy));
 

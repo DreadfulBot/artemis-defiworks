@@ -19,7 +19,7 @@ RUN cargo build --release
 ## Runtime stage: Copy binary to new image and run 
 FROM ubuntu:20.04 AS runtime
 WORKDIR app
-COPY --from=builder /app/target/release/artemis /usr/local/bin
+COPY --from=builder /app/target/release/mev-share-arb /usr/local/bin
 # Install openssl and ca-certificates
 RUN apt-get update && apt install -y openssl && apt install -y ca-certificates
-ENTRYPOINT /usr/local/bin/artemis
+ENTRYPOINT /usr/local/bin/mev-share-arb

@@ -9,7 +9,7 @@ members = [
     "examples/*",
 ]
 
-default-members = ["bin/artemis", "bin/cli"]
+default-members = ["bin/artemis", "bin/cli", "examples/mev-share-arb"]
 
 [workspace.dependencies]
 ## eth
