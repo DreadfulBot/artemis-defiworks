@@ -81,18 +81,16 @@ where
 
         let mut set = JoinSet::new();
 
-        // Spawn executors in separate threads.
-        for executor in self.executors {
-            let mut receiver = action_sender.subscribe();
+        // Spawn collectors in separate threads.
+        for collector in self.collectors {
+            let event_sender = event_sender.clone();
             set.spawn(async move {
-                info!("starting executor... ");
-                loop {
-                    match receiver.recv().await {
-                        Ok(action) => match executor.execute(action).await {
-                            Ok(_) => {}
-                            Err(e) => error!("error executing action: {}", e),
-                        },
-                        Err(e) => error!("error receiving action: {}", e),
+                info!("starting collector... ");
+                let mut event_stream = collector.get_event_stream().await.unwrap();
+                while let Some(event) = event_stream.next().await {
+                    match event_sender.send(event) {
+                        Ok(_) => {}
+                        Err(e) => error!("error sending event: {}", e),
                     }
                 }
             });
@@ -122,16 +120,18 @@ where
             });
         }
 
-        // Spawn collectors in separate threads.
-        for collector in self.collectors {
-            let event_sender = event_sender.clone();
+        // Spawn executors in separate threads.
+        for executor in self.executors {
+            let mut receiver = action_sender.subscribe();
             set.spawn(async move {
-                info!("starting collector... ");
-                let mut event_stream = collector.get_event_stream().await.unwrap();
-                while let Some(event) = event_stream.next().await {
-                    match event_sender.send(event) {
-                        Ok(_) => {}
-                        Err(e) => error!("error sending event: {}", e),
+                info!("starting executor... ");
+                loop {
+                    match receiver.recv().await {
+                        Ok(action) => match executor.execute(action).await {
+                            Ok(_) => {}
+                            Err(e) => error!("error executing action: {}", e),
+                        },
+                        Err(e) => error!("error receiving action: {}", e),
                     }
                 }
             });
