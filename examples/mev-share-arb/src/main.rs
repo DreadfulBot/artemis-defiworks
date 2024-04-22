@@ -36,6 +36,9 @@ pub struct Args {
     /// Path to file with pools
     #[arg(long)]
     pub pool_json_path: String,
+    /// Path to file with pools
+    #[arg(long)]
+    pub log_path: String,
     /// Address of the arb contract.
     #[arg(long)]
     pub arb_contract_address: Address,
@@ -43,16 +46,20 @@ pub struct Args {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args = Args::parse();
+    let log_path = args.log_path;
     // Set up tracing and parse args.
+    let file_appender =
+        tracing_appender::rolling::hourly(format!("{log_path}/mev-share-arbitrage"), "test.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+
     let filter = filter::Targets::new()
         .with_target("mev_share_uni_arb", Level::INFO)
         .with_target("artemis_core", Level::INFO);
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer().with_writer(non_blocking))
         .with(filter)
         .init();
-
-    let args = Args::parse();
 
     //  Set up providers and signers.
     let ws = Ws::connect(args.wss).await?;
