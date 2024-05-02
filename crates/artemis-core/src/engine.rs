@@ -114,7 +114,10 @@ where
                                 }
                             }
                         }
-                        Err(e) => error!("error receiving event: {}", e),
+                        Err(e) => {
+                            error!("error receiving event: {}, restarting binary", e);
+                            panic!("RESTART RESTART");
+                        }
                     }
                 }
             });
@@ -131,7 +134,10 @@ where
                             Ok(_) => {}
                             Err(e) => error!("error executing action: {}", e),
                         },
-                        Err(e) => error!("error receiving action: {}", e),
+                        Err(e) => {
+                            error!("error receiving action: {}, restarting binary", e);
+                            panic!("RESTART RESTART");
+                        }
                     }
                 }
             });

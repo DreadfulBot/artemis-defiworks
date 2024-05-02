@@ -3,6 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use mev_share_sse::{Event, EventClient};
 use tokio_stream::StreamExt;
+use tracing::error;
 
 /// A collector that streams from MEV-Share SSE endpoint
 /// and generates [events](Event), which return tx hash, logs, and bundled txs.
@@ -23,9 +24,12 @@ impl Collector<Event> for MevShareCollector {
     async fn get_event_stream(&self) -> Result<CollectorStream<'_, Event>> {
         let client = EventClient::default();
         let stream = client.events(&self.mevshare_sse_url).await.unwrap();
-        let stream = stream.filter_map(|event| match event {
-            Ok(evt) => Some(evt),
-            Err(_) => None,
+        let stream = stream.filter_map(|event| {
+            event
+                .map_err(|e| {
+                    error!("Received error from SSE {e:?}");
+                })
+                .ok()
         });
         Ok(Box::pin(stream))
     }
