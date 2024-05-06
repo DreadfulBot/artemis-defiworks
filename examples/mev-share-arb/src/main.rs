@@ -18,6 +18,7 @@ use mev_share_uni_arb::{
     strategy::MevShareUniArb,
     types::{Action, Event},
 };
+use telegram::TelegramBot;
 use tracing::{info, Level};
 use tracing_subscriber::{filter, prelude::*};
 
@@ -42,6 +43,10 @@ pub struct Args {
     /// Address of the arb contract.
     #[arg(long)]
     pub arb_contract_address: Address,
+    #[arg(long)]
+    pub telegram_chat: i64,
+    #[arg(long)]
+    pub telegram_token: String,
 }
 
 #[tokio::main]
@@ -60,6 +65,8 @@ async fn main() -> Result<()> {
         .with(tracing_subscriber::fmt::layer().with_writer(non_blocking))
         .with(filter)
         .init();
+
+    let tg_bot = Arc::new(TelegramBot::new(&args.telegram_token));
 
     //  Set up providers and signers.
     let ws = Ws::connect(args.wss).await?;
@@ -91,7 +98,11 @@ async fn main() -> Result<()> {
     engine.add_strategy(Box::new(strategy));
 
     // Set up executor.
-    let mev_share_executor = Box::new(MevshareExecutor::new(fb_signer));
+    let mev_share_executor = Box::new(MevshareExecutor::new(
+        fb_signer,
+        tg_bot.clone(),
+        args.telegram_chat,
+    ));
     let mev_share_executor = ExecutorMap::new(mev_share_executor, |action| match action {
         Action::SubmitBundle(bundle) => Some(bundle),
     });

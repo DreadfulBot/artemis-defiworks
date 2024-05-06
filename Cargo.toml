@@ -7,6 +7,8 @@ members = [
     "crates/strategies/*",
     "crates/clients/*", 
     "examples/*",
+    "crates/notifiers/*", 
+    "crates/common",
 ]
 
 default-members = ["bin/artemis", "bin/cli", "examples/mev-share-arb"]

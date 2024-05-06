@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use crate::types::Executor;
 use anyhow::Result;
 use async_trait::async_trait;
+use common::Reporter;
 use ethers::signers::Signer;
 use jsonrpsee::http_client::{
     transport::{self},
@@ -8,15 +11,19 @@ use jsonrpsee::http_client::{
 };
 use mev_share::rpc::{FlashbotsSignerLayer, MevApiClient, SendBundleRequest};
 
-use tracing::{error, info};
-
 /// An executor that sends bundles to the MEV-share Matchmaker.
-pub struct MevshareExecutor {
+pub struct MevshareExecutor<N> {
     mev_share_client: Box<dyn MevApiClient + Send + Sync>,
+    notifier: Arc<N>,
+    report_target: i64,
 }
 
-impl MevshareExecutor {
-    pub fn new(signer: impl Signer + Clone + 'static) -> Self {
+impl<N> MevshareExecutor<N> {
+    pub fn new(
+        signer: impl Signer + Clone + 'static,
+        notifier: Arc<N>,
+        report_target: i64,
+    ) -> Self {
         // Set up flashbots-style auth middleware
         let http = HttpClientBuilder::default()
             .set_middleware(
@@ -28,19 +35,22 @@ impl MevshareExecutor {
             .expect("failed to build HTTP client");
         Self {
             mev_share_client: Box::new(http),
+            notifier,
+            report_target,
         }
     }
 }
 
 #[async_trait]
-impl Executor<SendBundleRequest> for MevshareExecutor {
+impl<N: Reporter + Send + Sync> Executor<SendBundleRequest> for MevshareExecutor<N> {
     /// Send bundles to the matchmaker.
     async fn execute(&self, action: SendBundleRequest) -> Result<()> {
         let body = self.mev_share_client.send_bundle(action).await;
-        match body {
-            Ok(body) => info!("Bundle response: {:?}", body),
-            Err(e) => error!("Bundle error: {}", e),
+        let resp = match body {
+            Ok(body) => format!("Bundle response: {body:?}"),
+            Err(e) => format!("Bundle error: {e}"),
         };
+        let _ = self.notifier.report(self.report_target, resp).await;
         Ok(())
     }
 }
