@@ -10,6 +10,7 @@ use jsonrpsee::http_client::{
     HttpClientBuilder,
 };
 use mev_share::rpc::{FlashbotsSignerLayer, MevApiClient, SendBundleRequest};
+use tracing::{error, info};
 
 /// An executor that sends bundles to the MEV-share Matchmaker.
 pub struct MevshareExecutor<N> {
@@ -45,12 +46,19 @@ impl<N> MevshareExecutor<N> {
 impl<N: Reporter + Send + Sync> Executor<SendBundleRequest> for MevshareExecutor<N> {
     /// Send bundles to the matchmaker.
     async fn execute(&self, action: SendBundleRequest) -> Result<()> {
+        let sim_result = self
+            .mev_share_client
+            .sim_bundle(action.clone(), Default::default())
+            .await;
+        let sim_resp = format!("Simulated bundle {sim_result:?}");
+        let _ = self.notifier.report(self.report_target, sim_resp).await;
+
         let body = self.mev_share_client.send_bundle(action).await;
-        let resp = match body {
-            Ok(body) => format!("Bundle response: {body:?}"),
-            Err(e) => format!("Bundle error: {e}"),
+        match body {
+            Ok(body) => info!("Bundle response: {body:?}"),
+            Err(e) => error!("Bundle error: {e}"),
         };
-        let _ = self.notifier.report(self.report_target, resp).await;
+        // let _ = self.notifier.report(self.report_target, resp).await;
         Ok(())
     }
 }
