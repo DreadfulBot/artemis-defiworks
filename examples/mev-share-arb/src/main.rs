@@ -14,11 +14,11 @@ use ethers::{
     signers::{LocalWallet, Signer},
     types::Address,
 };
+use external::ExternalReporter;
 use mev_share_uni_arb::{
     strategy::MevShareUniArb,
     types::{Action, Event},
 };
-use telegram::TelegramBot;
 use tracing::{info, Level};
 use tracing_subscriber::{filter, prelude::*};
 
@@ -46,7 +46,7 @@ pub struct Args {
     #[arg(long)]
     pub telegram_chat: i64,
     #[arg(long)]
-    pub telegram_token: String,
+    pub external_port: String,
 }
 
 #[tokio::main]
@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
         .with(filter)
         .init();
 
-    let tg_bot = Arc::new(TelegramBot::new(&args.telegram_token));
+    let external_reporter = Arc::new(ExternalReporter::new(args.external_port));
 
     //  Set up providers and signers.
     let ws = Ws::connect(args.wss).await?;
@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
     // Set up executor.
     let mev_share_executor = Box::new(MevshareExecutor::new(
         fb_signer,
-        tg_bot.clone(),
+        external_reporter.clone(),
         args.telegram_chat,
     ));
     let mev_share_executor = ExecutorMap::new(mev_share_executor, |action| match action {

@@ -30,3 +30,4 @@ tower = "0.4.13"
 
 ## local
 common = { path = "../common" }
+serde = "1.0.152"

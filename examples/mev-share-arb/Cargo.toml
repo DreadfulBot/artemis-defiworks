@@ -15,6 +15,7 @@ futures = "0.3.27"
 mev-share-uni-arb = { path = "../../crates/strategies/mev-share-uni-arb" }
 common = { path = "../../crates/common" }
 telegram = { path = "../../crates/notifiers/telegram" }
+external = { path = "../../crates/notifiers/external" }
 anyhow = "1.0.70"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"

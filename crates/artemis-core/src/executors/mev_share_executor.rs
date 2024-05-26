@@ -5,11 +5,17 @@ use anyhow::Result;
 use async_trait::async_trait;
 use common::Reporter;
 use ethers::signers::Signer;
-use jsonrpsee::http_client::{
-    transport::{self},
-    HttpClientBuilder,
+use ethers::types::TxHash;
+use jsonrpsee::{
+    core::client::ClientT,
+    http_client::{transport, HttpClient, HttpClientBuilder},
 };
-use mev_share::rpc::{FlashbotsSignerLayer, MevApiClient, SendBundleRequest};
+use mev_share::rpc::{
+    FlashbotsSigner, FlashbotsSignerLayer, MevApiClient, SendBundleRequest, SendBundleResponse,
+};
+use serde::Serialize;
+use tokio::sync::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender};
+use tower::util::MapErr;
 use tracing::{error, info};
 
 /// An executor that sends bundles to the MEV-share Matchmaker.
@@ -43,22 +49,27 @@ impl<N> MevshareExecutor<N> {
 }
 
 #[async_trait]
-impl<N: Reporter + Send + Sync> Executor<SendBundleRequest> for MevshareExecutor<N> {
+impl<N: Reporter<BundleData> + Send + Sync> Executor<SendBundleRequest> for MevshareExecutor<N> {
     /// Send bundles to the matchmaker.
     async fn execute(&self, action: SendBundleRequest) -> Result<()> {
-        let sim_result = self
-            .mev_share_client
-            .sim_bundle(action.clone(), Default::default())
-            .await;
-        let sim_resp = format!("Simulated bundle {sim_result:?}");
-        let _ = self.notifier.report(self.report_target, sim_resp).await;
-
+        let block = action.inclusion.block.as_u64();
         let body = self.mev_share_client.send_bundle(action).await;
         match body {
-            Ok(body) => info!("Bundle response: {body:?}"),
-            Err(e) => error!("Bundle error: {e}"),
+            Ok(body) => {
+                info!("Bundle response: {body:?}");
+                let report_data = BundleData { hash: body, block };
+                let _ = self.notifier.report(self.report_target, report_data).await;
+            }
+            Err(e) => {
+                error!("Bundle error: {e}")
+            }
         };
-        // let _ = self.notifier.report(self.report_target, resp).await;
         Ok(())
     }
+}
+
+#[derive(Serialize)]
+struct BundleData {
+    hash: SendBundleResponse,
+    block: u64,
 }

@@ -12,7 +12,7 @@ impl TelegramBot {
     }
 }
 
-impl Reporter for TelegramBot {
+impl Reporter<String> for TelegramBot {
     async fn report(&self, target: i64, text: String) -> Result<(), ReportError> {
         let chat_id = ChatId(target);
         self.bot
