@@ -88,14 +88,26 @@ contract BlindArb is Owned, IUniswapV3SwapCallback {
         uint256 amountIn,
         uint256 percentageToPayToCoinbase
     ) public onlyOwner {
+        // this is header taken from token1 function
+
+        // uint256 gasStart = gasleft();
+        // callBackAddress = v3Pair;
+        // nextAddress = v2Pair;
+        // token0 = false;
+
         uint256 gasStart = gasleft();
         callBackAddress = v3Pair;
+
+        // is this correct v2Pair address here?
+        nextAddress = v2Pair;
 
         uint256 balanceBefore = WETH.balanceOf(address(this));
 
         // Swap on V3
         IUniswapV3Pool(v3Pair).swap(
-            address(this),
+            // also reverted this line, and now test passes
+            // address(this),
+            v2Pair,
             true,
             int256(amountIn),
             MIN_SQRT_RATIO + 1,
@@ -143,6 +155,7 @@ contract BlindArb is Owned, IUniswapV3SwapCallback {
 
         // Swap on V3
         IUniswapV3Pool(v3Pair).swap(
+            // is this correct v2Pair address here?
             address(this),
             false,
             int256(amountIn),
@@ -186,6 +199,8 @@ contract BlindArb is Owned, IUniswapV3SwapCallback {
             tokenOutExact = uint256(-amount1Delta);
         }
 
+        // when running from execute_arb_weth_token_0, nextAddress is address(0)
+        // and pair resolving error is occured
         IUniswapV2Pair v2Pair = IUniswapV2Pair(nextAddress);
         (uint256 v2Reserve0, uint256 v2Reserve1, ) = v2Pair.getReserves();
 

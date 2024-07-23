@@ -170,6 +170,7 @@ impl<M: Middleware + 'static, S: Signer + 'static> MevShareUniArb<M, S> {
                 // Construct arb tx based on whether the v2 pool has weth as token0.
                 let mut inner = match v2_info.is_weth_token0 {
                     true => {
+                        // execute_arb_weth_token_0 call
                         self.arb_contract
                             .execute_arb_weth_token_0(
                                 v2_info.v2_pool,
@@ -181,6 +182,7 @@ impl<M: Middleware + 'static, S: Signer + 'static> MevShareUniArb<M, S> {
                     }
                     false => {
                         self.arb_contract
+                        // execute_arb_weth_token_1 call
                             .execute_arb_weth_token_1(
                                 v2_info.v2_pool,
                                 v3_address,
